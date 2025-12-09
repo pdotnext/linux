@@ -86,8 +86,52 @@ sudo grep StopIdleSessionSec /etc/systemd/logind.conf
 sudo systemctl restart systemd-logind.service
 # check the status
 sudo systemctl status systemd-logind.service | head -n 5
-
 ```
+
+## Creating Login and Pre-login banner
+
+### Login Banner
+This is simple and you can easily achieved by creating `.motd` file inside /etc/motd.d/49-nameofthefile.motd
+
+```shell
+echo "This system belongs to PDTN,INC" | sudo tee /etc/motd.d/49-postlogin.motd
+```
+
+### Pre-login Banner
+This is bit involved. Pre-login banner is a message you get before you enter your credentials
+
+```shell
+# create a pre-login message and save it
+echo "Unless you are authorized, do not login here" | sudo tee /etc/ssh/sshd-banner
+
+# create backup copy of sshd, below makes sense only when you modifying this file once in day
+sudo cp -v /etc/ssh/sshd_config{,_$(date +%F)}
+
+# Update the Banner location in sshd_config file
+sudo sed -i "s/#Banner none/Banner \/etc\/ssh\/sshd-banner/g" /etc/ssh/sshd_config
+
+# Check if the file is updated
+sudo grep Banner /etc/ssh/sshd_config
+
+# Note: Everytime you modify sshd_config file,
+# you MUST either reload or restart sshd service
+sudo systemctl reload-or-restart sshd.service
+```
+
+## Other security measures
+
+- Ensure `X11Forwarding` is disabled. Default is no
+- Disable ssh tunnel, ensure the following values are set to no in sshd_config
+```shell
+    AllowTcpForwarding no # ( Default is yes)
+    #GatewayPorts no (# Default is no)
+    #PermitTunnel no (# Default is no)
+    AllowStreamLocalForwarding no # (This value was not present in RHEL9 sshd_config file)
+```
+
+**Note: When to use AllowStreamLocalForwarding?** </br>
+
+For instance, if you have a database application that uses Unix domain sockets and </br> you want to allow a remote user to connect to it securely over SSH, </br> you would enable AllowStreamLocalForwarding for that user.
 
 ## Reference
 - [How to apply TMOUT for all users except for only one in RHEL](https://access.redhat.com/solutions/4134801)
