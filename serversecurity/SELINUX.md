@@ -1,4 +1,4 @@
-[[2025-10-26]] [[Security]]
+SELINUX Notes
 
 SELINUX stands for the Security Enhanced Linux (SELINUX)
 selinux needs three things
@@ -18,8 +18,11 @@ systemctl --version | grep +SELINUX
 # -BPF_FRAMEWORK +XKBCOMMON +UTMP +SYSVINIT default-hierarchy=unified
 ```
 ### What is DAC and MAC ?
-DAC stands for discretionary access control (DAC) and primary focuses on who is allowed to do what but it does not define how a file is used e.g. you do not want web directory to be used for purpose other than web hosting.
-MAC stands for mandatory access control and defines the policies who is allowed to access which directory and for what purpose.
+DAC stands for discretionary access control (DAC) and primary focuses </br>
+on who is allowed to do what but it does not define how a file is used </br>
+e.g. you do not want web directory to be used for purpose other than web hosting.
+MAC stands for mandatory access control and defines the policies who is allowed </br>
+to access which directory and for what purpose.
 
 ### selinux file context
 
@@ -87,10 +90,15 @@ sudo setenforce 0 # to disable
 ```
 
 ### What is targeted policy?
-Application developer define what actions are allowed on specific configuration and data file, binary file, port or resources. These policies are already defined for us and we do not have much work here to do.
+Application developer define what actions are allowed on specific configuration </br>
+and data file, binary file, port or resources. These policies are already defined </br>
+for us and we do not have much work here to do.
 
 #### Then what is confined and unconfined?
-Applications which are running under targeted policy are considered confined and govern by the policy and therefore protected by selinux. In contrast, applications which do not have any policy defined are called unconfined and not protected by selinux.
+Applications which are running under targeted policy are considered confined </br>
+and govern by the policy and therefore protected by selinux. In contrast, applications </br>
+which do not have any policy defined are called unconfined and not protected by selinux.
+
 #### selinux policies
 selinux policies define how specific process accesses relevant files, directory and ports.</br>
 Each resource entity (e.g. file, port, directory or process) has a label,</br> which is referred selinux context label.
@@ -106,7 +114,12 @@ unconfined_u:object_r:user_home_t:s0
 		# possible security level.
 ```
 
-If you have Apache installed, the `/var/www/html` has context type of `httpd_sys_context_t`  and similarly, for the temp directory it is `tmp_t` as shown below. Apache can access only directories which has the context `httpd_sys_context_t` defined, otherwise access is denied. In this case, web server is compromised and user tries to access file in different directory it won't be possible because selinux by default denies access.
+If you have Apache installed, the `/var/www/html` has context type of `httpd_sys_context_t` </br>
+and similarly, for the temp directory it is `tmp_t` as shown below. </br>
+Apache can access only directories which has the context `httpd_sys_context_t` defined, </br>
+otherwise access is denied. In this case, web server is compromised and </br>
+user tries to access file in different directory it won't be possible </br>
+because selinux by default denies access.
 
 ```shell
 ➤ ls -ldZ /tmp
@@ -135,7 +148,10 @@ system_u:object_r:httpd_sys_content_t:s0     6 Jul 28 16:28 html
 ```
 
 #### Copy or Move
-When you copy the file within the same file system, then file context is inherited from the destination to which it is copied and when you move the file, the file context of original file is moved. In other words, copy is safe but move can be cause problems.
+When you copy the file within the same file system, then file context is inherited </br>
+from the destination to which it is copied and when you move the file, </br>
+the file context of original file is moved. In other words, </br>
+copy is safe but move can be cause problems.
 
 ```shell
 sudo cp myindex.html /var/www/html/
@@ -157,7 +173,8 @@ ls -lZ /var/www/html/
 With `cp -p` or `cp --preserve=context` you can retain the original file context or with move i.e. `mv -Z` you can change the original file context i.e. it is same behavior as `cp`
 
 #### chcon, Restorecon and fcontext
-chcon is temporary method to change the context of the file. Only recommended for troubleshooting purposes. Here is an example
+chcon is temporary method to change the context of the file. </br>
+Only recommended for troubleshooting purposes. Here is an example
 
 ```shell
 sudo touch /virtual/index.html
@@ -196,7 +213,8 @@ sudo chcon --reference anotherindex.html index.html
 
 ### Recommended steps to apply selinux context is
 
-1. Check if directory has right label, this can be checked using `semanage fcontext -l | grep www` and then apply the right label using the following command
+1. Check if directory has right label, this can be checked using `semanage fcontext -l | grep www` </br>
+and then apply the right label using the following command
 
 ```shell
 sudo semanage fcontext --add --type httpd_sys_content_t '/virtual(/.*)?'
@@ -232,9 +250,11 @@ ls -lZ /virtual/
 Before you start, please install the following tools
 
 ```shell
-sudo dnf install setools policycoreutils policycoreutils-python-utils setroubleshoot selinux-policy-doc
-sudo service auditd restart # <- This is the only way to restart auditd service while systemctl it fails
-sudo mandb
+sudo dnf install setools policycoreutils policycoreutils-python-utils \
+setroubleshoot selinux-policy-doc
+sudo service auditd restart # <- This is the only way to restart \
+                            # auditd service while systemctl it fails
+sudo mandb # update manuals
 ```
 
 `seinfo` and man pages for application specific
@@ -352,7 +372,58 @@ Tools at hands are
 - `/var/log/audit/audit.log`
 
 ```shell
-
 ausearch -m avc --start recent -i
+```
 
+### When to set SELinux in permissive mode?
+When you are unable to see any logs in the `/var/log/messages or /var/log/audit/audit.log` </br>
+then your only choiceis to set the selinux in permissive mode.</br>
+When multiple selinux problems are encountered, it may happen </br>
+no logs are seen in the respective log location.
+
+#### What happens in permissive mode?
+In permissive mode, even though you service or your task work through, </br>
+but it logs the message.And this message description helps </br>
+you to find where exactly the problem is.
+
+#### Where to see the logs?
+
+First place is always in the messages. Search for sealert.
+
+```shell
+sudo grep sealert -A 3 /var/log/messages
+```
+
+Then run the command as shown above
+```shell
+sealert -l 525882cd-e7e3-4d97-97ac-df968a100586
+```
+
+You can also look into ausearch
+
+```shell
+sudo ausearch -m avc --start today -i
+```
+
+But none of them provide the solution you are looking for. You need to understand some basics.
+
+```log
+SELinux is preventing /usr/sbin/httpd from 
+read access on the file /var/www/html/index.html
+```
+
+Tells us the something is wrong with /var/www/html/index.html. </br>
+As first step try creating a simple file in the same directory </br>
+e.g. anotherindex.html
+
+#### How to fix
+you can use either restorecon, chcon
+```shell
+sudo chcon --reference /var/www/html/anotherindex.html /var/www/html/index.html 
+sudo ls -lZ /var/www/html/ | awk {'print $5,$10'}
+```
+
+```output
+system_u:object_r:httpd_sys_content_t:s0 anotherindex.html
+system_u:object_r:httpd_sys_content_t:s0 index.html
 ```
