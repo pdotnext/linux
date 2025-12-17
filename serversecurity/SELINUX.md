@@ -340,7 +340,10 @@ sudo semanage port --list | grep http
 # http_port_t                    tcp      80, 81, 443, 488, 8008, 8009, 8443, 9000
 ```
 
-So if you change the port in the list mentioned above, httpd service will start but if you change to something e.g 82 it won't work. Lets say you wish to add different port, then you must changes in httpd.conf file and update semanage
+So if you change the port in the list mentioned above, </br>
+httpd service will start but if you change to something </br>
+e.g 82 it won't work. Lets say you wish to add different port, </br>
+then you must changes in httpd.conf file and update semanage.
 
 ```shell
 sudo semanage port --add --type http_port_t --proto tcp 82
