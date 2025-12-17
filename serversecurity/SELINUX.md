@@ -11,7 +11,11 @@ selinux needs three things
 ```shell
 systemctl --version | grep +SELINUX
 ## --- output ---
-# +PAM +AUDIT +SELINUX -APPARMOR +IMA +SMACK +SECCOMP +GCRYPT +GNUTLS +OPENSSL +ACL +BLKID +CURL +ELFUTILS +FIDO2 +IDN2 -IDN -IPTC +KMOD +LIBCRYPTSETUP +LIBFDISK +PCRE2 -PWQUALITY +P11KIT -QRENCODE +TPM2 +BZIP2 +LZ4 +XZ +ZLIB +ZSTD -BPF_FRAMEWORK +XKBCOMMON +UTMP +SYSVINIT default-hierarchy=unified
+# +PAM +AUDIT +SELINUX -APPARMOR +IMA +SMACK +SECCOMP +GCRYPT 
+# +GNUTLS +OPENSSL +ACL +BLKID +CURL +ELFUTILS +FIDO2 +IDN2
+# -IDN -IPTC +KMOD +LIBCRYPTSETUP +LIBFDISK +PCRE2 -PWQUALITY 
+# +P11KIT -QRENCODE +TPM2 +BZIP2 +LZ4 +XZ +ZLIB +ZSTD 
+# -BPF_FRAMEWORK +XKBCOMMON +UTMP +SYSVINIT default-hierarchy=unified
 ```
 ### What is DAC and MAC ?
 DAC stands for discretionary access control (DAC) and primary focuses on who is allowed to do what but it does not define how a file is used e.g. you do not want web directory to be used for purpose other than web hosting.
@@ -27,12 +31,7 @@ selinux file context are defined on
 
 The database of this file context is maintained in `/etc/selinux/targeted/contexts/files` and it is text based database.
 
-### Before you start, please install the following tools
 
-```shell
-sudo dnf install setools policycoreutils policycoreutils-python-utils setroubleshoot
-sudo service auditd restart # <- This is the only way to restart auditd service while systemctl it fails
-```
 
 ### Check the status of selinux
 
@@ -135,9 +134,7 @@ system_u:object_r:httpd_sys_script_exec_t:s0 6 Jul 28 16:28 cgi-bin
 system_u:object_r:httpd_sys_content_t:s0     6 Jul 28 16:28 html
 ```
 
-
 #### Copy or Move
-
 When you copy the file within the same file system, then file context is inherited from the destination to which it is copied and when you move the file, the file context of original file is moved. In other words, copy is safe but move can be cause problems.
 
 ```shell
@@ -149,33 +146,47 @@ ls -lZ /var/www/html/
 
 # When you move the file, the original label moves with it.
 sudo mv myindex.html /var/www/html/
+
+# lets check the output.
 ls -lZ /var/www/html/
 
 ### --- output ---
 # unconfined_u:object_r:user_home_t:s0 0 Oct 27 08:34 myindex.html
 ```
 
-with `cp -p` or `cp --preserve=context` you can retain the original file context or with move i.e. `mv -Z` you can change the original file context i.e. it is same behavior as `cp`
+With `cp -p` or `cp --preserve=context` you can retain the original file context or with move i.e. `mv -Z` you can change the original file context i.e. it is same behavior as `cp`
+
 #### chcon, Restorecon and fcontext
 chcon is temporary method to change the context of the file. Only recommended for troubleshooting purposes. Here is an example
 
 ```shell
-[vagrant@rheldev ~]$ sudo touch /virtual/index.html
-[vagrant@rheldev ~]$ ls -lZ /virtual/
-unconfined_u:object_r:default_t:s0 index.html
+sudo touch /virtual/index.html
+
+# --- Check the result
+ls -lZ /virtual/
+### --- output ---
+# unconfined_u:object_r:default_t:s0 index.html
 # Here the default context default_t is inheireted
 # Now lets change the context using chcon
 
 sudo chcon --recursive --type=httpd_sys_content_t /virtual
+# --- Check the result
 ls -lZ /virtual
-unconfined_u:object_r:httpd_sys_content_t:s0 0 Oct 27 08:50 index.html
+### --- output ---
+# unconfined_u:object_r:httpd_sys_content_t:s0 0 Oct 27 08:50 index.html
 
-# Lets run restorecon
+# Now see what happens with restorecon
 sudo restorecon -vRF /virtual
+### --- output ---
 Relabeled /virtual from unconfined_u:object_r:httpd_sys_content_t:s0 to unconfined_u:object_r:default_t:s0
+
+### --- output ---
 
 ls -lZ /virtual
 unconfined_u:object_r:default_t:s0 0 Oct 27 08:50 index.html
+
+# ~ restorecon has restore the context, because
+# with chcon you must use a flag -p for permanent.
 ```
 
 Another best flag in chcon is --reference
@@ -183,83 +194,107 @@ Another best flag in chcon is --reference
 sudo chcon --reference anotherindex.html index.html
 ```
 
-Recommended steps to apply selinux context is
+### Recommended steps to apply selinux context is
 
 1. Check if directory has right label, this can be checked using `semanage fcontext -l | grep www` and then apply the right label using the following command
 
 ```shell
 sudo semanage fcontext --add --type httpd_sys_content_t '/virtual(/.*)?'
-# The regular expression is needed because there no recursive option in this command.
-# always remember there is forward slash before this regex begins
+#
+# ~ The regular expression is needed because there no recursive
+# option in this command.
+# Always remember there is NO forward slash before this regex begins
 # Once the label is applied, using restorecon to apply the label.
 
 
 sudo restorecon -RFvv /virtual/
-# Relabeled /virtual from unconfined_u:object_r:default_t:s0 to system_u:object_r:httpd_sys_content_t:s0
-# Relabeled /virtual/index.html from unconfined_u:object_r:default_t:s0 to system_u:object_r:httpd_sys_content_t:s0
 
 # Finally check if the changes are in effect.
+
 sudo semanage fcontext --list --locallist
-SELinux fcontext   type               Context
-/virtual(/.*)?     all files          system_u:object_r:httpd_sys_content_t:s0
+
+#
+# --- output ---
+# SELinux fcontext   type               Context
+# /virtual(/.*)?     all files          system_u:object_r:httpd_sys_content_t:s0
 
 # And now check the label
+
 ls -lZ /virtual/
-system_u:object_r:httpd_sys_content_t:s0 Oct 27 08:50 index.html
+
+#
+# --- output ---
+# system_u:object_r:httpd_sys_content_t:s0 Oct 27 08:50 index.html
 ```
 
 ### Prerequisites
 
-Most of the prerequisites are installed on rhel9, apart from the below
-
-`seinfo` and man pages for application specific
+Before you start, please install the following tools
 
 ```shell
-sudo dnf install setools selinux-policy-doc
+sudo dnf install setools policycoreutils policycoreutils-python-utils setroubleshoot selinux-policy-doc
+sudo service auditd restart # <- This is the only way to restart auditd service while systemctl it fails
 sudo mandb
 ```
 
+`seinfo` and man pages for application specific
+
 ## SEBOOLEAN
 
-Application developer can enable or disable specific function using boolean. e.g. you can enable user's `homedir` to be browseable using `seboolean`
+Application developer can enable or disable specific function using boolean. </br> e.g. you can enable user's `homedir` to be browseable using `seboolean`
 
-### main commands
+### Main commands
 
-1. `getsebool -a`  This the only flag available with the command and its purpose it to list more than one boolean.
+1. `getsebool -a`  This the only flag available with the command and </br>
+its purpose it to list more than one boolean.
 2. `semanage boolean -l`
 
 ```shell
 getsebool -a | grep httpd_enable_
-httpd_enable_cgi --> on
-httpd_enable_ftp_server --> off
-httpd_enable_homedirs --> off
+
+#
+# --- output ---
+# httpd_enable_cgi --> on <- This should be turned off
+# httpd_enable_ftp_server --> off
+# httpd_enable_homedirs --> off
 
 # In case you know the name of the settings
 sudo getsebool httpd_enable_cgi
-httpd_enable_cgi --> on
 
-# One get same output as above using setsebool
+#################
+# --- output ---
+# httpd_enable_cgi --> on
+
+# One can get same output as above using setsebool
 sudo semanage boolean -l | grep httpd_enable_
-httpd_enable_cgi               (on   ,   on)  Allow httpd to enable cgi
-httpd_enable_ftp_server        (off  ,  off)  Allow httpd to enable ftp server
-httpd_enable_homedirs          (off  ,  off)  Allow httpd to enable homedirs
+
+#################
+# --- output ---
+# httpd_enable_cgi               (on   ,   on)  Allow httpd to enable cgi
+# httpd_enable_ftp_server        (off  ,  off)  Allow httpd to enable ftp server
+# httpd_enable_homedirs          (off  ,  off)  Allow httpd to enable homedirs
 ```
 
-In front of `httpd_enable_cgi`, there are two `on`, which means the runtime and booted value for `httpd_enable_cgi` is same.
- You can change the boolean value using setsebool or semanage boolean.
+> In front of `httpd_enable_cgi`, there are two `on`, which means the runtime and booted value for `httpd_enable_cgi` is same.
+
+You can change the boolean value using setsebool or semanage boolean.
 ```shell
 # enable
 sudo semanage boolean --modify httpd_enable_homedirs --on
 # list
 sudo semanage boolean --list | grep httpd_enable_homedirs
+
+#################
 # --- output ---
 # httpd_enable_homedirs          (on   ,   on)  Allow httpd to enable homedirs
 ```
- The reason i prefer `semanage boolean` in comparison with `setsebool` is, in `setsebool` we have to use `-P` for permanent changes.
+ The reason i prefer `semanage boolean` in comparison with `setsebool` is, in `setsebool` </br> we have to use `-P` for permanent changes.
 
 ### SEBOOLEAN and httpd
 
-by default `httpd_unified` is turned off but it might be needed for application which needs read and execute permissions on web content. When it is turned on, then the following context is also enabled
+By default `httpd_unified` is turned off but it might be needed for </br>
+application which needs read and execute permissions on web content. </br>
+When it is turned on, then the following context is also enabled.
 
 ```shell
 httpd_sys_content_t # read only web content
@@ -267,27 +302,32 @@ httpd_sys_rw_content_t # writable web content
 httpd_sys_script_exec_t # Script execution esp. PHP, CGI
 ```
 
-httpd_can_sendmail is default off but might be needed to turn off when web application needs to send email.
+`httpd_can_sendmail` is default off but might be needed to turn off when web application needs to send email.
 
 ## SEMANAGE port - protecting network ports
 
-semanage port provides the method for protecting ports.
-In case you wish to find out on which port `httpd` service is allowed, you can use `--list`flag
+semanage port provides the method for protecting ports. </br>
+In case, you wish to find out on which port `httpd` service is allowed, you can use `--list`flag
 
 ```shell
+
 sudo semanage port --list | grep http
-http_port_t                    tcp      80, 81, 443, 488, 8008, 8009, 8443, 9000
+#################
+# --- output ---
+# http_port_t                    tcp      80, 81, 443, 488, 8008, 8009, 8443, 9000
 ```
 
-So if you change the port in the list mentioned above httpd service will start but if you change to something e.g 82 it won't work.
-lets say you wish to add different port, then you must changes in httpd.conf file and update semanage
+So if you change the port in the list mentioned above, httpd service will start but if you change to something e.g 82 it won't work. Lets say you wish to add different port, then you must changes in httpd.conf file and update semanage
 
 ```shell
 sudo semanage port --add --type http_port_t --proto tcp 82
 
 # check if all is there as expected
 sudo semanage port --list | grep ^http_port_t
-# -- output
+
+#
+#################
+# --- output ---
 # http_port_t                tcp      82, 80, 81, 443, 488, 8008, 8009, 8443, 9000
 ```
 
@@ -296,7 +336,10 @@ Rolling back the change
 sudo semanage port --delete --type http_port_t --proto tcp 82
 # -- check if the change was properly implemented
 sudo semanage port --list | grep ^http_port_t
-# -- output
+
+#
+#################
+# --- output ---
 # http_port_t                    tcp      80, 81, 443, 488, 8008, 8009, 8443, 9000
 ```
 
