@@ -170,7 +170,8 @@ ls -lZ /var/www/html/
 # unconfined_u:object_r:user_home_t:s0 0 Oct 27 08:34 myindex.html
 ```
 
-With `cp -p` or `cp --preserve=context` you can retain the original file context or with move i.e. `mv -Z` you can change the original file context i.e. it is same behavior as `cp`
+With `cp -p` or `cp --preserve=context` you can retain the original file context or with move </br>
+i.e. `mv -Z` you can change the original file context i.e. it is same behavior as `cp`
 
 #### chcon, Restorecon and fcontext
 chcon is temporary method to change the context of the file. </br>
