@@ -196,7 +196,8 @@ ls -lZ /virtual
 # Now see what happens with restorecon
 sudo restorecon -vRF /virtual
 ### --- output ---
-Relabeled /virtual from unconfined_u:object_r:httpd_sys_content_t:s0 to unconfined_u:object_r:default_t:s0
+# Relabeled /virtual from unconfined_u:object_r:httpd_sys_content_t:s0 \
+# to unconfined_u:object_r:default_t:s0
 
 ### --- output ---
 
@@ -296,7 +297,8 @@ sudo semanage boolean -l | grep httpd_enable_
 # httpd_enable_homedirs          (off  ,  off)  Allow httpd to enable homedirs
 ```
 
-> In front of `httpd_enable_cgi`, there are two `on`, which means the runtime and booted value for `httpd_enable_cgi` is same.
+In front of `httpd_enable_cgi`, there are two `on`, which means the </br>
+runtime and booted value for `httpd_enable_cgi` is same.
 
 You can change the boolean value using setsebool or semanage boolean.
 ```shell
