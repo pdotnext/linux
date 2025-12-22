@@ -36,6 +36,7 @@ drwxrwxrwt 17 root root 380 Oct  6 15:35 /tmp/
 ## Find files with 4000 and 2000 permissions
 
 ```shell
+# Note: we have escaped the round brackets
 sudo find / -type f \( -perm -4000 -o -perm -2000 \) 2>/dev/null -ls
 ```
 
@@ -75,6 +76,7 @@ You can do this with find command. find command is inherintly recursive. You can
 
 ```shell
 # do not execute this command, this is pure for demo purpose
+# And every time you wild card search, always use quotes
 find / -type f -iname '*.conf' -exec chmod 600 {} \;
 ```
 
@@ -223,10 +225,7 @@ other::---
 ```shell
 # lets remove maggie, -x removes all permissions
 setfacl -x u:maggie /groupinfo/readable_content.txt
-
 ```
-
-
 
 ```shell
 # check the new permissions
@@ -248,7 +247,6 @@ other::---
 ```
 
 ### Backup with acl
-
 when you backup your data using tar, you must `--acl` otherwise all acl flags are lost.
 
 ```shell
@@ -258,7 +256,6 @@ tar -cJvf directoryName.tar.xz directoryName.tar --acl
 # restore using --acl flag
 tar -xJvf directoryName.tar.xz --directory='/locationWhereYouWishToRestore' --acl
 ```
-
 
 ## Reference
 [Linux permissions: SUID, SGID, and sticky bit](https://www.redhat.com/en/blog/suid-sgid-sticky-bit)

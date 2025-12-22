@@ -13,3 +13,19 @@
         echo $i:$userpass | sudo chpasswd;
         sudo passwd --expire $i;
     end
+#############################################################################
+#!/bin/zsh
+# --- Decription ---
+# Create users using zsh shell and using array
+users=(walter jose aaron goldie)
+passwd="BMW#2025"
+for user in ${users};
+    do
+        echo "create user $user"
+        sudo useradd $user
+        echo "set initial password for the $user"
+        echo $user:$passwd | sudo chpasswd
+        echo "force user $user to change password"
+        sudo passwd --expire $user
+        echo "************************************"
+done
