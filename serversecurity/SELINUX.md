@@ -378,7 +378,10 @@ Tools at hands are
 - `/var/log/audit/audit.log`
 
 ```shell
-ausearch -m avc --start recent -i
+sudo ausearch -m avc --start recent -i
+
+# from redhat docs
+sudo ausearch -m AVC,USER_AVC,SELINUX_ERR,USER_SELINUX_ERR -ts today
 ```
 
 ### When to set SELinux in permissive mode?
@@ -398,6 +401,8 @@ First place is always in the messages. Search for sealert.
 
 ```shell
 sudo grep sealert -A 3 /var/log/messages
+# from Redhat docs
+sudo grep "SELinux is preventing" /var/log/messages
 ```
 
 Then run the command as shown above

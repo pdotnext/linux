@@ -1,6 +1,6 @@
 # SSH Hardening
 
-## Disable Root login. 
+## Disable Root login
 By default in RHEL it is prohibit-password, </br>
 which means you cannot login using password.
 
