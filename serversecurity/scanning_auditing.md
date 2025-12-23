@@ -99,6 +99,11 @@ Inside conf.maldet file we need to achieve following
 - configure infected files are quarantine and attempt to clean the files
 - monitor not users for paths
 
+Other things which are default on and recommended to be left untouched are
+
+- scan_ignore_root=1 to ignore root owned files
+- scan_max_depth=15 to limit the tree depth of the directories.
+
 ```shell
 # Below is diff between configured file and backed up file
 ↪ diff /usr/local/maldetect/conf.maldet /usr/local/maldetect/conf.maldet_2025-12-23-1040 
