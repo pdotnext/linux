@@ -15,7 +15,10 @@ You can also submit your own malware samples.
 
 ### Why we need ClamAV?
 We need it because ClamAV is more efficient when scanning </br> 
-large filesets ClamAV can also use malware signature from LMD.
+large filesets ClamAV can also use malware signature from LMD.</br> 
+In fact, `scan_clamscan=1` is turned on in LMD. </br> 
+LMD is more effective in detecting web based malware.</br>
+but clamAV excels at binary threats.
 
 ### Installing ClamAV
 
@@ -93,14 +96,12 @@ Both the files are located under /usr/local/maldetech/{conf.maldet,monitor_paths
 Inside conf.maldet file we need to achieve following
 
 - enable email alert
-- configure infected files are quarantine
+- configure infected files are quarantine and attempt to clean the files
 - monitor not users for paths
 
 ```shell
 # Below is diff between configured file and backed up file
-diff /usr/local/maldetect/conf.maldet \
-/usr/local/maldetect/conf.maldet_2025-12-23-1040
-
+↪ diff /usr/local/maldetect/conf.maldet /usr/local/maldetect/conf.maldet_2025-12-23-1040 
 16c16
 < email_alert="1"
 ---
@@ -113,6 +114,10 @@ diff /usr/local/maldetect/conf.maldet \
 < quarantine_hits="1"
 ---
 > quarantine_hits="0"
+248c248
+< quarantine_clean="1"
+---
+> quarantine_clean="0"
 281,282c281,282
 < # default_monitor_mode="users"
 < default_monitor_mode="/usr/local/maldetect/monitor_paths"
@@ -152,6 +157,7 @@ sudo systemctl restart maldet
 
 ```
 
+### Regular review logs
 Where to find the activities detected by LMD
 
 ```shell
